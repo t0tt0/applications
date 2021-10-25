@@ -12,6 +12,7 @@ import (
 	ChainType "github.com/HyperService-Consortium/go-uip/const/chain_type"
 	merkleprooftype "github.com/HyperService-Consortium/go-uip/const/merkle-proof-type"
 	"github.com/HyperService-Consortium/go-uip/uip"
+	//"github.com/ethereum/sharding/log"
 	"github.com/tendermint/tendermint/abci/types"
 	"os"
 )
@@ -24,6 +25,9 @@ var (
 	)
 	secondPartMerkleProofMismatch = errors.New(
 		"the root hash is required to prove or wrong",
+	)
+	MerkleProofmatch = errors.New(
+		"the root hash is valid",
 	)
 )
 
@@ -279,7 +283,16 @@ func (nsb *Contract) validateMerklePatriciaTrie(
 	}
 }
 
-type ArgsAddBlockCheck struct {
+
+
+type ArgsValidateYes struct {
+	ChainID  uint64 `json:"1"`
+	BlockID  []byte `json:"2"`
+	RtType   uint8  `json:"3"`
+	RootHash []byte `json:"4"`
+}
+
+type ArgsValidateNo struct {
 	ChainID  uint64 `json:"1"`
 	BlockID  []byte `json:"2"`
 	RtType   uint8  `json:"3"`
@@ -290,22 +303,48 @@ func merkleProofKey(chainID uint64, blockID []byte, RtType uint8) []byte {
 	return crypto.Sha512(util.Uint64ToBytes(chainID), blockID, []byte{RtType})
 }
 
-func (nsb *Contract) addBlockCheck(bytesArgs []byte) *types.ResponseDeliverTx {
-	var args ArgsAddBlockCheck
+//what addcheck do in applications
+
+
+//06
+func (nsb *Contract) ValidateYes(bytesArgs []byte) *types.ResponseDeliverTx {
+	var args ArgsValidateYes
 	util.MustUnmarshal(bytesArgs, &args)
-	// TODO: check valid isc/tid/blockid
-	err := nsb.validOnChainMerkleProofMap.TryUpdate(
+
+	bt, err := nsb.validOnChainMerkleProofMap.TryGet(
 		merkleProofKey(args.ChainID, args.BlockID, args.RtType),
-		args.RootHash,
 	)
 	if err != nil {
+		//log.Error("validateyes error, in applications design......")
 		return response.ExecContractError(err)
+	}
+	if !bytes.Equal(bt, args.RootHash) {
+		//log.Error("validateyes error, in applications design......, mismatching.......")
+		return response.ExecContractError(secondPartMerkleProofMismatch)
 	}
 
 	return &types.ResponseDeliverTx{
 		Code: uint32(response.CodeOK()),
-		Info: "updateSuccess",
+		Info: "searchingsuccess",
 	}
+}
+
+//06
+func (nsb *Contract) ValidateNo(bytesArgs []byte) *types.ResponseDeliverTx {
+	var args ArgsValidateNo
+	util.MustUnmarshal(bytesArgs, &args)
+	_, err := nsb.validOnChainMerkleProofMap.TryGet(
+		merkleProofKey(args.ChainID, args.BlockID, args.RtType),
+	)
+	if err != nil {
+		return &types.ResponseDeliverTx{
+			Code: uint32(response.CodeOK()),
+			Info: "validatingnosuccess",
+		}
+	}
+
+	return response.ExecContractError(MerkleProofmatch)
+	//return
 }
 
 type ArgsGetMerkleProof struct {

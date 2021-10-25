@@ -16,7 +16,7 @@ var (
 	codePath = flag.String("i", "", "the path of contract to deploy")
 	host     = flag.String("host", "", "the ethereum rpc address")
 	address  = flag.String("address", "", "transaction.from")
-	password = flag.String("password", "123456", "address password")
+	password = flag.String("password", "1", "address password")
 )
 
 func main() {
@@ -42,6 +42,7 @@ func main() {
 
 	ok := sugar.HandlerError(eth.PersonalUnlockAccout(*address, *password, 100)).(bool)
 	if !ok {
+		log.Fatal("really here???????")
 		log.Fatal(ok)
 	}
 	//000000000000000000000000dda250dd2646e02ee403da26eb7065dedafb79fd
@@ -62,7 +63,10 @@ func main() {
 			//Value: "0x10",
 		})).([]byte)))
 
-	fmt.Println(res)
+	fmt.Println("try here?????????????")
+	log.Fatal("try here??????????")
+	//log.Print("")
+	//fmt.Println(res)
 }
 
 func formatAddress(s string) string {

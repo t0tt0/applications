@@ -33,6 +33,7 @@ func loadState(db dbm.DB) *NSBState {
 func saveState(state *NSBState) {
 	stateBytes, err := json.Marshal(state)
 	if err != nil {
+		print("savestateerror!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
 		panic(err)
 	}
 	state.db.Set(stateKey, stateBytes)

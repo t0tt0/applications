@@ -4,19 +4,17 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
-	"strings"
-
 	"github.com/HyperService-Consortium/NSB/account"
 	"github.com/HyperService-Consortium/NSB/application/response"
 	cmn "github.com/HyperService-Consortium/NSB/common"
 	"github.com/HyperService-Consortium/NSB/crypto"
+	nsbrpc "github.com/HyperService-Consortium/NSB/grpc/nsbrpc"
 	"github.com/HyperService-Consortium/NSB/localstorage"
 	"github.com/HyperService-Consortium/NSB/math"
+	"github.com/gogo/protobuf/proto"
 	"github.com/tendermint/tendermint/abci/types"
 	ten_cmn "github.com/tendermint/tendermint/libs/common"
-
-	nsbrpc "github.com/HyperService-Consortium/NSB/grpc/nsbrpc"
-	"github.com/gogo/protobuf/proto"
+	"strings"
 )
 
 var (
@@ -43,24 +41,30 @@ func (nsb *NSBApplication) parseTxHeader(txHeaderProtobuf []byte) (
 	var txHeader cmn.TransactionHeader
 	txHeader.Value = math.NewUint256FromBytes(txHeaderRaw.Value)
 	if txHeader.Value == nil {
+		nsb.logger.Info("decodeTxError, right???????HERE??????????")
 		return nil, response.DecodeTxHeaderError(errorDecodeUint256)
 	}
 	txHeader.Nonce = math.NewUint256FromBytes(txHeaderRaw.Nonce)
+	//nsb.logger.Info("nonce check", "nonce of current tx, wb or ub", txHeader.Nonce)
 	if txHeader.Nonce == nil {
+		nsb.logger.Info("DecodeTxError, right???????HERE??????????")
 		return nil, response.DecodeTxHeaderError(errorDecodeUint256)
 	}
 
 	byteInfo, err := nsb.txMap.TryGet(txHeaderProtobuf)
 	// internal error
 	if err != nil {
+		nsb.logger.Info("retrieveTxError, right???????HERE??????????")
 		return nil, response.ReTrieveTxError(err)
 	}
 	if byteInfo != nil {
+		nsb.logger.Info("duplicateTxError, right???????HERE??????????")
 		return nil, response.DuplicateTxError
 	}
 	err = nsb.txMap.TryUpdate(txHeaderProtobuf, []byte{1})
 	// internal error
 	if err != nil {
+		nsb.logger.Info("updateTxError, right???????HERE??????????")
 		return nil, response.UpdateTxTrieError(err)
 	}
 
@@ -121,6 +125,8 @@ func (nsb *NSBApplication) createContractAccount(
 	*cmn.AccountInfo,
 	*types.ResponseDeliverTx,
 ) {
+	//nsb.logger.Info("sleeping....")
+	//time.Sleep(time.Duration(2)*time.Second)
 	nsb.logger.Info("creating", "contractName", contractName)
 	txHeader.ContractAddress = []byte(account.NewAccount(txHeader.Signature, txHeader.Nonce.Bytes(), nsb.state.StateRoot).PublicKey)
 
@@ -130,6 +136,7 @@ func (nsb *NSBApplication) createContractAccount(
 		return nil, response.ExecContractError(err)
 	}
 	if byteInfo != nil {
+		nsb.logger.Info("conflict adress.......another try")
 		return nil, response.ConflictAddress
 	}
 	var contractInfo cmn.AccountInfo
@@ -150,6 +157,9 @@ func (nsb *NSBApplication) parseFAPair(bytesPair []byte) (
 	}
 	return &fap, nil
 }
+
+
+
 func (nsb *NSBApplication) prepareContractEnvironment(
 	bytesTx []byte, createFlag bool,
 ) (
@@ -289,6 +299,7 @@ func (nsb *NSBApplication) storeState(
 	var err error
 	conInfo.StorageRoot, err = env.Storage.Commit()
 	if err != nil {
+		nsb.logger.Info("here???????11111111111111111")
 		return response.CommitAccTrieError(err)
 	}
 
@@ -300,6 +311,7 @@ func (nsb *NSBApplication) storeState(
 
 	err = nsb.accMap.TryUpdate(env.From, bt)
 	if err != nil {
+		nsb.logger.Info("here???????11111111111111111222222")
 		return response.UpdateAccTrieError(err)
 	}
 
@@ -310,13 +322,16 @@ func (nsb *NSBApplication) storeState(
 
 	err = nsb.accMap.TryUpdate(env.ContractAddress, bt)
 	if err != nil {
+		nsb.logger.Info("here???????11111111111111111333333333")
 		return response.UpdateAccTrieError(err)
 	}
 
 	return nil
 }
 
+//many many...
 func (nsb *NSBApplication) parseFuncTransaction(tx []byte) *types.ResponseDeliverTx {
+	nsb.logger.Info("send transactions")
 
 	env, accInfo, conInfo, errInfo := nsb.prepareContractEnvironment(tx, false)
 	if errInfo != nil {
@@ -330,10 +345,12 @@ func (nsb *NSBApplication) parseFuncTransaction(tx []byte) *types.ResponseDelive
 		// TODO: modify accInfo
 		errInfo = nsb.modifyState(cb, env, accInfo, conInfo)
 		if errInfo != nil {
+			nsb.logger.Info("here???????1111111111111111144444444")
 			return errInfo
 		}
 		errInfo = nsb.storeState(env, accInfo, conInfo)
 		if errInfo != nil {
+			nsb.logger.Info("here???????111111111111111115555555")
 			return errInfo
 		}
 		if cb.Tags == nil {
@@ -372,8 +389,11 @@ func (nsb *NSBApplication) parseFuncTransaction(tx []byte) *types.ResponseDelive
 	}
 }
 
+//create isc first
 func (nsb *NSBApplication) parseCreateTransaction(tx []byte) *types.ResponseDeliverTx {
 
+
+	nsb.logger.Info("create contract, create initial isc...................................................")
 	env, accInfo, conInfo, errInfo := nsb.prepareContractEnvironment(tx, true)
 	if errInfo != nil {
 		return errInfo
@@ -417,6 +437,8 @@ func (nsb *NSBApplication) parseCreateTransaction(tx []byte) *types.ResponseDeli
 		}
 	}
 
+	nsb.logger.Info("try sleeping 0s in creating isc contract, in create initial isc???")
+	//time.Sleep(time.Duration(2)*time.Second)
 	return &types.ResponseDeliverTx{
 		Code: cb.CodeResponse,
 		Log:  cb.Log,
@@ -432,8 +454,11 @@ func (nsb *NSBApplication) parseCreateTransaction(tx []byte) *types.ResponseDeli
 	}
 }
 
-func (nsb *NSBApplication) parseSystemFuncTransaction(tx []byte) *types.ResponseDeliverTx {
 
+//functions in contract, storing, everything in systemcall
+func (nsb *NSBApplication) parseSystemFuncTransaction(tx []byte) *types.ResponseDeliverTx {
+	nsb.logger.Info("system contract transactions, try to sleep 0s now")
+	//time.Sleep(time.Duration(10)*time.Second)
 	env, frInfo, toInfo, errInfo := nsb.prepareSystemContractEnvironment(tx)
 	if errInfo != nil {
 		return errInfo
@@ -452,7 +477,10 @@ func (nsb *NSBApplication) parseSystemFuncTransaction(tx []byte) *types.Response
 
 	cb := nsb.systemCall(names[0], env, frInfo, toInfo, names[1], fap.Args)
 
+
+
 	if cb.Code == uint32(response.CodeOK()) {
+		nsb.logger.Info("nothing unusual....................in system call")
 		bt, err := json.Marshal(frInfo)
 		if err != nil {
 			return response.EncodeAccountInfoError(err)

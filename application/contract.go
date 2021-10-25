@@ -103,6 +103,8 @@ func (nsb *NSBApplication) createContracts(contractEnv *cmn.ContractEnvironment)
 	}
 }
 
+
+//what system call do, from parseSystemFuncTransaction
 func (nsb *NSBApplication) systemCall(
 	contractName string,
 	env *cmn.TransactionHeader,

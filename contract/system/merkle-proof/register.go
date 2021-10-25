@@ -6,6 +6,7 @@ import (
 	"github.com/tendermint/tendermint/abci/types"
 )
 
+//system_merkleproof_method
 func (nsb *Contract) RegisteredMethod(
 	env *cmn.TransactionHeader,
 	frInfo *cmn.AccountInfo,
@@ -17,8 +18,10 @@ func (nsb *Contract) RegisteredMethod(
 		return nsb.validateMerkleProof(args)
 	case "getMerkleProof":
 		return nsb.getMerkleProof(args)
-	case "addBlockCheck":
-		return nsb.addBlockCheck(args)
+	case "validateYes":
+		return nsb.ValidateYes(args)
+	case "validateNo":
+		return nsb.ValidateNo(args)
 	default:
 		return response.InvalidFuncTypeError(response.MethodMissing)
 	}

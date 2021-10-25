@@ -14,6 +14,7 @@ import (
 	dbm "github.com/tendermint/tm-db"
 
 	log "github.com/HyperService-Consortium/NSB/log"
+	"time"
 )
 
 func NewNSBApplication(logger log.TendermintLogger, dbDir string) (*NSBApplication, error) {
@@ -132,6 +133,10 @@ func (nsb *NSBApplication) CheckTx(types.RequestCheckTx) types.ResponseCheckTx {
 func (nsb *NSBApplication) DeliverTx(req types.RequestDeliverTx) types.ResponseDeliverTx {
 	nsb.logger.Info("DeliverTx")
 
+	// be used here to simulate the delay......
+	time.Sleep(1 * time.Nanosecond)
+	//time.Sleep( * time.Second)
+
 	if len(req.Tx) < 1 {
 		return *response.InvalidTxInputFormatTooShort
 	}
@@ -144,7 +149,7 @@ func (nsb *NSBApplication) DeliverTx(req types.RequestDeliverTx) types.ResponseD
 		ret = nsb.parseFuncTransaction(req.Tx[1:])
 
 	case transactiontype.SystemCall: // transact system contract methods
-		ret = nsb.parseSystemFuncTransaction(req.Tx[1:])
+		ret = nsb.parseSystemFuncTransaction(req.Tx[1:]) //define what transactions do.
 
 	case transactiontype.CreateContract: // create on-chain contracts
 		ret = nsb.parseCreateTransaction(req.Tx[1:])
@@ -168,6 +173,7 @@ func (nsb *NSBApplication) Commit() types.ResponseCommit {
 	// accMap, txMap is the sub-Map of stateMap
 	nsb.state.StateRoot, err = nsb.stateMap.Commit(nil)
 	if err != nil {
+		nsb.logger.Info("Commit error!!!!!!!!!!!!!!!!!!!!!!!!!!")
 		panic(err)
 	}
 	nsb.state.Height += 1

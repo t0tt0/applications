@@ -3,6 +3,7 @@ package jsonobj
 import (
 	"bytes"
 	"encoding/hex"
+	"fmt"
 	bytespool "github.com/HyperService-Consortium/NSB/lib/bytes-pool"
 	"strconv"
 	"strings"
@@ -74,6 +75,8 @@ func GetPersonalUnlock(addr string, passphrase string, duration int) []byte {
 // GetSendTransaction return whether unlocked
 // do not send too long obj
 func GetSendTransaction(obj []byte) []byte {
+
+	fmt.Println("get send transaction, return whether unlocked")
 	var b = bp.Get()
 	var buf = bytes.NewBuffer(b)
 	buf.Reset()
@@ -84,6 +87,8 @@ func GetSendTransaction(obj []byte) []byte {
 
 	buf.WriteByte(endParamByte)
 	buf.WriteByte(endJSONByte)
+
+
 
 	return buf.Bytes()
 }
